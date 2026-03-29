@@ -17,6 +17,20 @@ const AUTO_MOVE_INTERVAL = 150;
 
 const RANKING_KEY = 'sugologue_rankings';
 
+// Scroll game-area to center on player position
+function scrollToPlayer() {
+  if (!renderer || !game) return;
+  const gameArea = document.getElementById('game-area');
+  if (!gameArea || gameArea.scrollWidth <= gameArea.clientWidth) return;
+  const pos = game.position;
+  const tile = game.map.tiles.get(`${pos.q},${pos.r}`);
+  if (!tile) return;
+  const pixel = renderer.getPixelForTile(tile);
+  if (!pixel) return;
+  gameArea.scrollLeft = pixel.x - gameArea.clientWidth / 2;
+  gameArea.scrollTop = pixel.y - gameArea.clientHeight / 2;
+}
+
 // --- DOM ---
 const titleScreen = document.getElementById('title-screen');
 const app = document.getElementById('app');
@@ -282,6 +296,7 @@ function startGame(floor, keepStats = null, initialGold = 0) {
   eventChoices.innerHTML = '';
   updateUI();
   showFloorName(floor, map.floorName);
+  setTimeout(scrollToPlayer, 100);
 
   if (!lastTime) requestAnimationFrame(gameLoop);
 }
@@ -321,6 +336,7 @@ function gameLoop(time) {
         if (game.movesLeft <= 0) game.endMovement();
       }
       updateUI();
+      scrollToPlayer();
     }
   }
 
@@ -480,6 +496,7 @@ function handleCanvasTap(clientX, clientY) {
   if (adjacent) {
     game.moveToHex(tile.q, tile.r);
     updateUI();
+    scrollToPlayer();
     return;
   }
 
@@ -491,6 +508,7 @@ function handleCanvasTap(clientX, clientY) {
     game.executeAutoStep(firstStep.q, firstStep.r);
     if (autoMovePath.length === 0 && game.movesLeft <= 0) game.endMovement();
     updateUI();
+    scrollToPlayer();
   }
 }
 

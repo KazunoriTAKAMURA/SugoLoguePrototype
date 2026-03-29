@@ -27,25 +27,14 @@ export class Renderer {
     }
     const padding = HEX_SIZE * 3;
     const maxHeight = 5 * HEIGHT_PX;
-    let w = (maxX - minX) + padding * 2;
-    let h = (maxY - minY) + padding * 2 + maxHeight;
+    const w = (maxX - minX) + padding * 2;
+    const h = (maxY - minY) + padding * 2 + maxHeight;
 
-    // On mobile, scale canvas to fit viewport width
-    const viewportW = window.innerWidth;
-    const isMobile = viewportW <= 1024 || ('ontouchstart' in window);
-    if (isMobile && w > viewportW) {
-      const scale = viewportW / w;
-      w = viewportW;
-      h = Math.ceil(h * scale);
-      this.mobileScale = scale;
-    } else {
-      this.mobileScale = 1;
-    }
-
-    this.canvas.width = Math.max(w, 300);
-    this.canvas.height = Math.max(h, 250);
-    this.offsetX = (-minX + padding) * this.mobileScale;
-    this.offsetY = (-minY + padding + maxHeight) * this.mobileScale;
+    // Always draw at full resolution; scrolling handles overflow
+    this.canvas.width = Math.max(w, 600);
+    this.canvas.height = Math.max(h, 500);
+    this.offsetX = -minX + padding;
+    this.offsetY = -minY + padding + maxHeight;
   }
 
   clear() {
@@ -58,11 +47,6 @@ export class Renderer {
     this.clear();
     this.playerAnimPhase += dt * 0.003;
 
-    const { ctx } = this;
-    if (this.mobileScale !== 1) {
-      ctx.save();
-      ctx.scale(this.mobileScale, this.mobileScale);
-    }
 
     const movableSet = new Set();
     let backHexKey = null;
@@ -114,10 +98,6 @@ export class Renderer {
 
     // Player
     this.drawPlayer(game);
-
-    if (this.mobileScale !== 1) {
-      ctx.restore();
-    }
   }
 
   drawHexTile(tile, isMovable, isBack, isVisited, isHovered) {
@@ -239,22 +219,23 @@ export class Renderer {
     ctx.fillRect(sx - barW / 2, sy - 19, barW * hpRatio, barH);
   }
 
+  getPixelForTile(tile) {
+    const pixel = axialToPixel(tile.q, tile.r);
+    return {
+      x: pixel.x + this.offsetX,
+      y: pixel.y + this.offsetY - tile.height * HEIGHT_PX,
+    };
+  }
+
   screenToHex(screenX, screenY, tiles) {
-    // Undo mobile scaling: screen coords → canvas logical coords
-    const scale = this.mobileScale || 1;
-    const logX = screenX / scale;
-    const logY = screenY / scale;
-    // offsetX/Y were already multiplied by scale in resize, undo that
-    const offX = this.offsetX / scale;
-    const offY = this.offsetY / scale;
     let closest = null;
     let closestDist = Infinity;
     for (const tile of tiles.values()) {
       const pixel = axialToPixel(tile.q, tile.r);
-      const sx = pixel.x + offX;
-      const sy = pixel.y + offY - tile.height * HEIGHT_PX;
-      const dx = logX - sx;
-      const dy = logY - sy;
+      const sx = pixel.x + this.offsetX;
+      const sy = pixel.y + this.offsetY - tile.height * HEIGHT_PX;
+      const dx = screenX - sx;
+      const dy = screenY - sy;
       const dist = dx * dx + dy * dy;
       if (dist < closestDist && dist < HEX_SIZE * HEX_SIZE) {
         closest = tile;
