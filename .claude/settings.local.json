@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ipconfig)",
+      "Bash(findstr /i \"IPv4\")",
+      "Bash(netstat -ano)",
+      "Bash(tasklist)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://192.168.1.6:8080/)",
+      "Bash(netsh advfirewall:*)",
+      "Bash(wmic process:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://192.168.1.6:3000/)",
+      "Bash(taskkill //PID 23396 //F)",
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)"
+    ]
+  }
+}

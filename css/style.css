@@ -10,6 +10,10 @@ body {
   font-family: 'Segoe UI', 'Yu Gothic UI', sans-serif;
   overflow: hidden;
   height: 100vh;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }
 
 .hidden { display: none !important; }
@@ -498,7 +502,116 @@ body {
 #log-content .log-entry.event-spring { color: #00bcd4; }
 #log-content .log-entry.event-boss { color: #ff4757; }
 
+/* ====== Stats+Equip Row (for mobile 2-col) ====== */
+#stats-equip-row {
+  display: contents; /* no effect on desktop */
+}
+
 /* ====== Scrollbar ====== */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #1a1a2e; }
 ::-webkit-scrollbar-thumb { background: #0f3460; border-radius: 3px; }
+
+/* ====== Mobile (< 768px) ====== */
+@media (max-width: 768px) {
+  body {
+    overflow: auto;
+    height: auto;
+  }
+
+  /* Title screen */
+  #title-logo { font-size: 42px; letter-spacing: 4px; }
+  #title-sub { font-size: 14px; letter-spacing: 3px; }
+  #title-deco { font-size: 18px; margin-bottom: 20px; }
+  #title-content { padding: 20px; }
+  .title-dice { width: 56px; height: 56px; line-height: 56px; font-size: 32px; }
+  #title-dice-result { font-size: 16px; }
+  #btn-title-roll { padding: 12px 36px; font-size: 16px; }
+  #btn-start { padding: 14px 40px; font-size: 18px; }
+  #ranking-section { max-width: 100%; padding: 0 8px; }
+  .rank-entry { font-size: 11px; gap: 4px; }
+  .rank-equip { padding-left: 0; }
+
+  /* Game layout: vertical stack */
+  #app {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  #game-area {
+    width: 100%;
+    flex: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    justify-content: flex-start;
+    align-items: flex-start;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #gameCanvas {
+    max-width: 100vw;
+    height: auto;
+  }
+
+  #move-info {
+    font-size: 14px;
+    padding: 6px 14px;
+    gap: 10px;
+  }
+
+  #move-remaining { font-size: 22px; }
+
+  #floor-name-number { font-size: 14px; }
+  #floor-name-text { font-size: 24px; }
+
+  /* UI Panel: full width below canvas */
+  #ui-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 2px solid #0f3460;
+    padding: 10px;
+    gap: 6px;
+  }
+
+  #ui-panel h1 {
+    font-size: 18px;
+    margin-bottom: 2px;
+  }
+
+  /* Stats + Equip side by side on mobile */
+  #stats-equip-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  #stats-equip-row > .panel {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .stat-row { font-size: 12px; padding: 1px 0; }
+  .equip-row { font-size: 11px; padding: 2px 0; }
+  .panel { padding: 8px; }
+  .panel h2 { font-size: 11px; margin-bottom: 4px; }
+
+  /* Dice compact */
+  .dice { width: 48px; height: 48px; line-height: 48px; font-size: 28px; }
+  #btn-roll { padding: 10px; font-size: 15px; }
+  #dice-total { font-size: 13px; }
+
+  /* Event */
+  #event-text { font-size: 13px; min-height: 30px; }
+  #event-choices button {
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 44px; /* tap-friendly */
+  }
+
+  /* Log compact */
+  #log-content { max-height: 120px; font-size: 11px; }
+
+  /* Endroll */
+  .endroll-line { font-size: 16px; }
+  #btn-endroll-skip { bottom: 20px; right: 20px; padding: 8px 20px; font-size: 14px; }
+}

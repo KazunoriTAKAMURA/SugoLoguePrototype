@@ -27,12 +27,25 @@ export class Renderer {
     }
     const padding = HEX_SIZE * 3;
     const maxHeight = 5 * HEIGHT_PX;
-    const w = (maxX - minX) + padding * 2;
-    const h = (maxY - minY) + padding * 2 + maxHeight;
-    this.canvas.width = Math.max(w, 600);
-    this.canvas.height = Math.max(h, 500);
-    this.offsetX = -minX + padding;
-    this.offsetY = -minY + padding + maxHeight;
+    let w = (maxX - minX) + padding * 2;
+    let h = (maxY - minY) + padding * 2 + maxHeight;
+
+    // On mobile, scale canvas to fit viewport width
+    const viewportW = window.innerWidth;
+    const isMobile = viewportW <= 768;
+    if (isMobile && w > viewportW) {
+      const scale = viewportW / w;
+      w = viewportW;
+      h = Math.ceil(h * scale);
+      this.mobileScale = scale;
+    } else {
+      this.mobileScale = 1;
+    }
+
+    this.canvas.width = Math.max(w, 300);
+    this.canvas.height = Math.max(h, 250);
+    this.offsetX = (-minX + padding) * this.mobileScale;
+    this.offsetY = (-minY + padding + maxHeight) * this.mobileScale;
   }
 
   clear() {
@@ -44,6 +57,12 @@ export class Renderer {
   render(map, game, dt) {
     this.clear();
     this.playerAnimPhase += dt * 0.003;
+
+    const { ctx } = this;
+    if (this.mobileScale !== 1) {
+      ctx.save();
+      ctx.scale(this.mobileScale, this.mobileScale);
+    }
 
     const movableSet = new Set();
     let backHexKey = null;
@@ -95,6 +114,10 @@ export class Renderer {
 
     // Player
     this.drawPlayer(game);
+
+    if (this.mobileScale !== 1) {
+      ctx.restore();
+    }
   }
 
   drawHexTile(tile, isMovable, isBack, isVisited, isHovered) {
@@ -217,14 +240,17 @@ export class Renderer {
   }
 
   screenToHex(screenX, screenY, tiles) {
+    // Undo mobile scaling for hit detection
+    const adjX = screenX / this.mobileScale;
+    const adjY = screenY / this.mobileScale;
     let closest = null;
     let closestDist = Infinity;
     for (const tile of tiles.values()) {
       const pixel = axialToPixel(tile.q, tile.r);
-      const sx = pixel.x + this.offsetX;
-      const sy = pixel.y + this.offsetY - tile.height * HEIGHT_PX;
-      const dx = screenX - sx;
-      const dy = screenY - sy;
+      const sx = pixel.x + this.offsetX / this.mobileScale;
+      const sy = pixel.y + this.offsetY / this.mobileScale - tile.height * HEIGHT_PX;
+      const dx = adjX - sx;
+      const dy = adjY - sy;
       const dist = dx * dx + dy * dy;
       if (dist < closestDist && dist < HEX_SIZE * HEX_SIZE) {
         closest = tile;

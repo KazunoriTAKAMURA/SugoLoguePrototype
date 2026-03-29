@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SugoLogue - すごろく×ローグライト</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -59,23 +59,25 @@
     <div id="ui-panel">
       <h1>SugoLogue</h1>
 
-      <div id="stats-panel" class="panel">
-        <h2>ステータス</h2>
-        <div class="stat-row"><span>HP</span><span id="stat-hp">20 / 20</span></div>
-        <div class="stat-row"><span>ATK</span><span id="stat-atk">3</span></div>
-        <div class="stat-row"><span>DEF</span><span id="stat-def">1</span></div>
-        <div class="stat-row"><span>AGI</span><span id="stat-agi">2</span></div>
-        <div class="stat-row"><span>ゴールド</span><span id="stat-gold">0</span></div>
-        <div class="stat-row"><span>レベル</span><span id="stat-level">1</span></div>
-        <div class="stat-row"><span>フロア</span><span id="stat-floor">1</span></div>
-        <div class="stat-row stat-turns"><span>残りダイス</span><span id="stat-turns">22 / 22</span></div>
-      </div>
+      <div id="stats-equip-row">
+        <div id="stats-panel" class="panel">
+          <h2>ステータス</h2>
+          <div class="stat-row"><span>HP</span><span id="stat-hp">20 / 20</span></div>
+          <div class="stat-row"><span>ATK</span><span id="stat-atk">3</span></div>
+          <div class="stat-row"><span>DEF</span><span id="stat-def">1</span></div>
+          <div class="stat-row"><span>AGI</span><span id="stat-agi">2</span></div>
+          <div class="stat-row"><span>ゴールド</span><span id="stat-gold">0</span></div>
+          <div class="stat-row"><span>レベル</span><span id="stat-level">1</span></div>
+          <div class="stat-row"><span>フロア</span><span id="stat-floor">1</span></div>
+          <div class="stat-row stat-turns"><span>残りダイス</span><span id="stat-turns">22 / 22</span></div>
+        </div>
 
-      <div id="equip-panel" class="panel">
-        <h2>装備</h2>
-        <div class="equip-row"><span class="equip-label">武器</span><span id="equip-weapon" class="equip-value">なし</span></div>
-        <div class="equip-row"><span class="equip-label">防具</span><span id="equip-armor" class="equip-value">なし</span></div>
-        <div class="equip-row"><span class="equip-label">装飾</span><span id="equip-accessory" class="equip-value">なし</span></div>
+        <div id="equip-panel" class="panel">
+          <h2>装備</h2>
+          <div class="equip-row"><span class="equip-label">武器</span><span id="equip-weapon" class="equip-value">なし</span></div>
+          <div class="equip-row"><span class="equip-label">防具</span><span id="equip-armor" class="equip-value">なし</span></div>
+          <div class="equip-row"><span class="equip-label">装飾</span><span id="equip-accessory" class="equip-value">なし</span></div>
+        </div>
       </div>
 
       <div id="dice-panel" class="panel">
