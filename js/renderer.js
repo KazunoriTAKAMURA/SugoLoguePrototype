@@ -32,7 +32,7 @@ export class Renderer {
 
     // On mobile, scale canvas to fit viewport width
     const viewportW = window.innerWidth;
-    const isMobile = viewportW <= 768;
+    const isMobile = viewportW <= 1024 || ('ontouchstart' in window);
     if (isMobile && w > viewportW) {
       const scale = viewportW / w;
       w = viewportW;
