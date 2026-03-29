@@ -463,12 +463,15 @@ btnStop.addEventListener('click', () => {
   }
 });
 
-canvas.addEventListener('click', (e) => {
+function handleCanvasTap(clientX, clientY) {
   if (!game || game.state !== 'moving') return;
   if (autoMovePath.length > 0) return;
   const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  // Scale from CSS display size to actual canvas pixel size
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (clientX - rect.left) * scaleX;
+  const y = (clientY - rect.top) * scaleY;
   const tile = renderer.screenToHex(x, y, map.tiles);
   if (!tile) return;
 
@@ -489,13 +492,27 @@ canvas.addEventListener('click', (e) => {
     if (autoMovePath.length === 0 && game.movesLeft <= 0) game.endMovement();
     updateUI();
   }
+}
+
+canvas.addEventListener('click', (e) => {
+  handleCanvasTap(e.clientX, e.clientY);
 });
+
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  if (e.changedTouches.length > 0) {
+    const t = e.changedTouches[0];
+    handleCanvasTap(t.clientX, t.clientY);
+  }
+}, { passive: false });
 
 canvas.addEventListener('mousemove', (e) => {
   if (!renderer || !map) return;
   const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
   const tile = renderer.screenToHex(x, y, map.tiles);
   if (tile) {
     renderer.hoveredHex = { q: tile.q, r: tile.r };

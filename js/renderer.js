@@ -240,17 +240,21 @@ export class Renderer {
   }
 
   screenToHex(screenX, screenY, tiles) {
-    // Undo mobile scaling for hit detection
-    const adjX = screenX / this.mobileScale;
-    const adjY = screenY / this.mobileScale;
+    // Undo mobile scaling: screen coords → canvas logical coords
+    const scale = this.mobileScale || 1;
+    const logX = screenX / scale;
+    const logY = screenY / scale;
+    // offsetX/Y were already multiplied by scale in resize, undo that
+    const offX = this.offsetX / scale;
+    const offY = this.offsetY / scale;
     let closest = null;
     let closestDist = Infinity;
     for (const tile of tiles.values()) {
       const pixel = axialToPixel(tile.q, tile.r);
-      const sx = pixel.x + this.offsetX / this.mobileScale;
-      const sy = pixel.y + this.offsetY / this.mobileScale - tile.height * HEIGHT_PX;
-      const dx = adjX - sx;
-      const dy = adjY - sy;
+      const sx = pixel.x + offX;
+      const sy = pixel.y + offY - tile.height * HEIGHT_PX;
+      const dx = logX - sx;
+      const dy = logY - sy;
       const dist = dx * dx + dy * dy;
       if (dist < closestDist && dist < HEX_SIZE * HEX_SIZE) {
         closest = tile;
