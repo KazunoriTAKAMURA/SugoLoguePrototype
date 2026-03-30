@@ -87,8 +87,9 @@ const mobEventText = document.getElementById('mob-event-text');
 const mobEventChoices = document.getElementById('mob-event-choices');
 const mobMenuModal = document.getElementById('mob-menu-modal');
 const mobStats = document.getElementById('mob-stats');
-const mobEquip = document.getElementById('mob-equip');
-const mobLog = document.getElementById('mob-log');
+const mobEqW = document.getElementById('mob-eq-w');
+const mobEqA = document.getElementById('mob-eq-a');
+const mobEqAc = document.getElementById('mob-eq-ac');
 const mobMenuClose = document.getElementById('mob-menu-close');
 
 // ====== Map radius per floor ======
@@ -359,7 +360,11 @@ function updateUI() {
     mobRoll.disabled = !canRoll;
     if (canRoll && !diceAnimating) mobRoll.textContent = '🎲';
 
-    // Update mini log
+    // Equip bar
+    mobEqW.textContent = `⚔${game.equipped[EquipSlot.WEAPON]?.name || 'なし'}`;
+    mobEqA.textContent = `🛡${game.equipped[EquipSlot.ARMOR]?.name || 'なし'}`;
+    mobEqAc.textContent = `💍${game.equipped[EquipSlot.ACCESSORY]?.name || 'なし'}`;
+
     updateMobLog();
   }
 }
@@ -442,22 +447,12 @@ function handleChoice(choice) {
 if (mobMenuBtn) {
   mobMenuBtn.addEventListener('click', () => {
     if (!game) return;
-    const w = game.equipped[EquipSlot.WEAPON]?.name || 'なし';
-    const a = game.equipped[EquipSlot.ARMOR]?.name || 'なし';
-    const ac = game.equipped[EquipSlot.ACCESSORY]?.name || 'なし';
 
     mobStats.innerHTML = `<div class="section-title">ステータス</div>
       <table><tr><td>HP</td><td>${game.hp} / ${game.maxHp}</td></tr>
       <tr><td>ATK</td><td>${game.atk}</td></tr><tr><td>DEF</td><td>${game.def}</td></tr>
-      <tr><td>AGI</td><td>${game.agi}</td></tr><tr><td>ゴールド</td><td>${game.gold}</td></tr>
-      <tr><td>レベル</td><td>${game.level}</td></tr><tr><td>フロア</td><td>${game.floor}/${game.maxFloor}</td></tr>
-      <tr><td>残りダイス</td><td>${game.turnsLeft}/${game.maxTurns}</td></tr></table>`;
-
-    mobEquip.innerHTML = `<div class="section-title">装備</div>
-      <table><tr><td>武器</td><td>${w}</td></tr><tr><td>防具</td><td>${a}</td></tr><tr><td>装飾</td><td>${ac}</td></tr></table>`;
-
-    mobLog.innerHTML = `<div class="section-title">ログ</div>
-      <div class="log-entries">${game.logs.slice(0, 20).map(l => `<div class="log-entry ${l.className}">${l.text}</div>`).join('')}</div>`;
+      <tr><td>AGI</td><td>${game.agi}</td></tr>
+      <tr><td>EXP</td><td>${game.exp} / ${game.level * 15}</td></tr></table>`;
 
     mobMenuModal.classList.remove('hidden');
   });

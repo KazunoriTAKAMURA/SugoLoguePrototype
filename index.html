@@ -53,12 +53,18 @@
         <div id="floor-name-text"></div>
       </div>
 
-      <!-- Mobile: floating HUD top bar -->
+      <!-- Mobile: floating HUD top bar (row 1) -->
       <div id="mob-hud" class="mob-only">
         <span id="mob-hp">HP 20/20</span>
         <span id="mob-gold">💰0</span>
         <span id="mob-floor">F1</span>
         <span id="mob-turns">🎲13</span>
+      </div>
+      <!-- Mobile: floating HUD row 2 (equipment) -->
+      <div id="mob-equip-bar" class="mob-only">
+        <span id="mob-eq-w">⚔なし</span>
+        <span id="mob-eq-a">🛡なし</span>
+        <span id="mob-eq-ac">💍なし</span>
       </div>
 
       <!-- Mobile: mini log (bottom-left) -->
@@ -81,12 +87,10 @@
         </div>
       </div>
 
-      <!-- Mobile: menu modal (stats/equip/log) -->
+      <!-- Mobile: menu modal (stats only) -->
       <div id="mob-menu-modal" class="mob-only hidden">
         <div id="mob-menu-box">
           <div id="mob-stats"></div>
-          <div id="mob-equip"></div>
-          <div id="mob-log"></div>
           <button id="mob-menu-close">閉じる</button>
         </div>
       </div>

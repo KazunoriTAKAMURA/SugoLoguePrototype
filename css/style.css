@@ -191,7 +191,11 @@ body {
   }
   #gameCanvas { display: block; }
 
-  #move-info { font-size: 14px; padding: 6px 14px; gap: 10px; top: 44px; }
+  #move-info {
+    position: fixed !important; top: auto !important; bottom: 96px;
+    left: 50%; transform: translateX(-50%);
+    font-size: 14px; padding: 6px 14px; gap: 10px; z-index: 21;
+  }
   #move-remaining { font-size: 20px; }
 
   /* --- Floating HUD top bar --- */
@@ -202,6 +206,16 @@ body {
     font-size: 13px; font-weight: bold; color: #e9b44c;
     border-bottom: 1px solid #0f3460;
   }
+
+  /* --- Equip bar (row 2) --- */
+  #mob-equip-bar {
+    position: fixed; top: 32px; left: 0; right: 0; z-index: 20;
+    display: flex !important; justify-content: space-around; align-items: center;
+    background: rgba(10, 10, 26, 0.75); padding: 3px 10px;
+    font-size: 11px; color: #8a9ab5;
+    border-bottom: 1px solid rgba(15, 52, 96, 0.5);
+  }
+  #mob-equip-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 30%; }
 
   /* --- Floating dice button (FAB) --- */
   #mob-roll {
@@ -244,7 +258,7 @@ body {
   /* --- Menu button (gear) --- */
   #mob-menu-btn {
     display: block !important;
-    position: fixed; top: 44px; right: 10px; z-index: 20;
+    position: fixed; top: 56px; right: 10px; z-index: 20;
     width: 40px; height: 40px; border-radius: 8px;
     background: rgba(10, 10, 26, 0.8); color: #e0e0e0;
     font-size: 22px; border: 1px solid #0f3460; cursor: pointer;
