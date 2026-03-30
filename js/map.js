@@ -416,6 +416,15 @@ function placeBridges(tiles, riverTiles, rng) {
     tile.terrain = Terrain.BRIDGE;
     tile.height = 1;
     bridges.push(tile);
+
+    // Clear any mountain/water neighbors so the bridge is actually usable
+    for (const n of getNeighbors(tile.q, tile.r)) {
+      const nt = tiles.get(hexKey(n.q, n.r));
+      if (nt && (nt.terrain.id === 'mountain' || nt.terrain.id === 'water') && nt.terrain.id !== 'river') {
+        nt.terrain = Terrain.PLAINS;
+        nt.height = 2;
+      }
+    }
   }
 }
 
