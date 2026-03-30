@@ -266,7 +266,7 @@ function gameLoop(time) {
       diceAnimating = false;
       dice1.textContent = game.die;
       dice1.classList.remove('rolling');
-      if (isMobile()) { mobRoll.textContent = '🎲'; mobRoll.disabled = true; }
+      if (isMobile()) { mobRoll.textContent = game.die; mobRoll.disabled = true; }
       game.confirmRoll();
       diceTotal.textContent = `${game.die} マス`;
       game.addLog(`🎲 ${game.die} (残り${game.turnsLeft}ターン)`);
@@ -340,12 +340,10 @@ function updateUI() {
     moveInfo.classList.add('hidden');
   }
 
-  // Desktop events
-  if (!isMobile()) {
-    if (game.state === 'event' && game.pendingEvent && !game.pendingEvent.autoResolve) showEvent(game.pendingEvent);
-    if (game.state === 'clear' && game.pendingEvent) showEvent(game.pendingEvent);
-    if (game.state === 'gameover' && game.pendingEvent) showEvent(game.pendingEvent);
-  }
+  // Events (desktop + mobile)
+  if (game.state === 'event' && game.pendingEvent && !game.pendingEvent.autoResolve) showEvent(game.pendingEvent);
+  if (game.state === 'clear' && game.pendingEvent) showEvent(game.pendingEvent);
+  if (game.state === 'gameover' && game.pendingEvent) showEvent(game.pendingEvent);
 
   logContent.innerHTML = game.logs.map(l => `<div class="log-entry ${l.className}">${l.text}</div>`).join('');
 
@@ -357,7 +355,12 @@ function updateUI() {
     mobFloor.textContent = `F${game.floor}`;
     mobTurns.textContent = `🎲${game.turnsLeft}`;
     mobTurns.style.color = game.turnsLeft <= 3 ? '#e74c3c' : game.turnsLeft <= 6 ? '#f39c12' : '#e9b44c';
-    mobRoll.disabled = game.state !== 'ready' || game.turnsLeft <= 0;
+    const canRoll = game.state === 'ready' && game.turnsLeft > 0;
+    mobRoll.disabled = !canRoll;
+    if (canRoll && !diceAnimating) mobRoll.textContent = '🎲';
+
+    // Update mini log
+    updateMobLog();
   }
 }
 
@@ -462,6 +465,40 @@ if (mobMenuBtn) {
 
 if (mobMenuClose) {
   mobMenuClose.addEventListener('click', () => mobMenuModal.classList.add('hidden'));
+}
+
+// ====== Mobile: mini log ======
+const mobMiniLog = document.getElementById('mob-mini-log');
+const mobMiniLogContent = document.getElementById('mob-mini-log-content');
+const mobMiniLogClose = document.getElementById('mob-mini-log-close');
+
+function updateMobLog() {
+  if (!mobMiniLogContent || !game) return;
+  const entries = game.logs.slice(0, 3);
+  mobMiniLogContent.innerHTML = entries.map(l => `<div class="mob-log-line ${l.className}">${l.text}</div>`).join('');
+}
+
+if (mobMiniLog) {
+  mobMiniLog.addEventListener('click', (e) => {
+    if (e.target === mobMiniLogClose) return;
+    mobMiniLog.classList.add('expanded');
+    mobMiniLogClose.classList.remove('hidden');
+    // Show full log
+    if (game) {
+      mobMiniLogContent.innerHTML = game.logs.slice(0, 30).map(l =>
+        `<div class="mob-log-line ${l.className}">${l.text}</div>`
+      ).join('');
+    }
+  });
+}
+
+if (mobMiniLogClose) {
+  mobMiniLogClose.addEventListener('click', (e) => {
+    e.stopPropagation();
+    mobMiniLog.classList.remove('expanded');
+    mobMiniLogClose.classList.add('hidden');
+    updateMobLog();
+  });
 }
 
 // ====== Input: Dice Roll ======

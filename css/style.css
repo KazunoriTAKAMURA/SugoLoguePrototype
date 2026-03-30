@@ -215,6 +215,32 @@ body {
   }
   #mob-roll:disabled { background: #3a3a5e; color: #6a6a8e; box-shadow: none; }
 
+  /* --- Mini log (bottom-left) --- */
+  #mob-mini-log {
+    display: block !important;
+    position: fixed; bottom: 16px; left: 10px; z-index: 20;
+    background: rgba(10, 10, 26, 0.8); border: 1px solid #0f3460;
+    border-radius: 8px; padding: 6px 10px;
+    width: calc(100vw - 100px); max-height: 60px; overflow: hidden;
+    font-size: 11px; color: #8a9ab5;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+  }
+  #mob-mini-log.expanded {
+    max-height: 50vh; overflow-y: auto; padding: 10px;
+  }
+  .mob-log-line { padding: 1px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mob-log-line.event-battle { color: #e74c3c; }
+  .mob-log-line.event-treasure { color: #e9b44c; }
+  .mob-log-line.event-trap { color: #9b59b6; }
+  .mob-log-line.event-shop { color: #3498db; }
+  .mob-log-line.event-spring { color: #00bcd4; }
+  .mob-log-line.event-boss { color: #ff4757; }
+  #mob-mini-log-close {
+    position: absolute; top: 4px; right: 6px;
+    background: none; border: none; color: #e0e0e0; font-size: 16px; cursor: pointer;
+    padding: 2px 6px;
+  }
+
   /* --- Menu button (gear) --- */
   #mob-menu-btn {
     display: block !important;
