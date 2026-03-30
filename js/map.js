@@ -10,6 +10,8 @@ export const Terrain = {
   HILLS:    { id: 'hills',    name: '丘',   color: '#c4a55a', side: '#9e8040', walkable: true },
   MOUNTAIN: { id: 'mountain', name: '山',   color: '#8a8a9a', side: '#6a6a7a', walkable: false },
   CASTLE:   { id: 'castle',   name: '城',   color: '#c8b8a0', side: '#9a8a70', walkable: true },
+  RIVER:    { id: 'river',    name: '川',   color: '#3a85d6', side: '#2a65a6', walkable: false },
+  BRIDGE:   { id: 'bridge',   name: '橋',   color: '#8B7355', side: '#6a5a40', walkable: true },
 };
 
 export const EventType = {
@@ -107,6 +109,9 @@ function tryGenerateMap(radius, seed, forceClear = false) {
   }
 
   enforceMountainRatio(tiles, allCoords, rng);
+
+  // Generate river with 2 bridges
+  placeRiver(tiles, allCoords, radius, rng);
 
   const start = placeEdge(tiles, allCoords, -1, EventType.START, rng);
   const goal = placeEdge(tiles, allCoords, 1, EventType.GOAL, rng);
@@ -284,6 +289,110 @@ function placeWarps(tiles, allCoords, rng, reachable) {
     t2.warpPairKey = hexKey(warps[0].q, warps[0].r);
     t1.warpVisible = true;
     t2.warpVisible = false; // hidden until first warp is used
+  }
+}
+
+// --- River generation ---
+function placeRiver(tiles, allCoords, radius, rng) {
+  // Pick a starting point near center
+  const innerCoords = allCoords.filter(c =>
+    Math.max(Math.abs(c.q), Math.abs(c.r), Math.abs(c.q + c.r)) <= radius - 1
+  );
+  if (innerCoords.length === 0) return;
+
+  const startCoord = innerCoords[Math.floor(rng() * innerCoords.length)];
+
+  // Pick a general direction (one of 6 hex directions) and its opposite
+  const dirs = [
+    { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
+    { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 },
+  ];
+  const dirIdx = Math.floor(rng() * 6);
+  const mainDir = dirs[dirIdx];
+  const oppDir = dirs[(dirIdx + 3) % 6];
+
+  // Grow river in both directions from start, snaking
+  const riverKeys = new Set();
+  growRiverArm(tiles, startCoord, mainDir, dirs, radius, rng, riverKeys);
+  growRiverArm(tiles, startCoord, oppDir, dirs, radius, rng, riverKeys);
+
+  // Convert river tiles
+  const riverTileList = [];
+  for (const key of riverKeys) {
+    const tile = tiles.get(key);
+    if (tile) {
+      tile.terrain = Terrain.RIVER;
+      tile.height = 1;
+      riverTileList.push(tile);
+    }
+  }
+
+  // Place 2 bridges on river tiles, at least 4 apart
+  placeBridges(tiles, riverTileList, rng);
+}
+
+function growRiverArm(tiles, start, mainDir, dirs, radius, rng, riverKeys) {
+  let q = start.q, r = start.r;
+  riverKeys.add(hexKey(q, r));
+
+  for (let step = 0; step < radius * 2; step++) {
+    // Choose next: 60% main direction, 20% veer left, 20% veer right
+    const mainIdx = dirs.findIndex(d => d.q === mainDir.q && d.r === mainDir.r);
+    const roll = rng();
+    let chosenDir;
+    if (roll < 0.6) {
+      chosenDir = mainDir;
+    } else if (roll < 0.8) {
+      chosenDir = dirs[(mainIdx + 1) % 6];
+    } else {
+      chosenDir = dirs[(mainIdx + 5) % 6];
+    }
+
+    const nq = q + chosenDir.q;
+    const nr = r + chosenDir.r;
+    const nk = hexKey(nq, nr);
+
+    // Check if still on map
+    if (!tiles.has(nk)) break; // reached edge, done
+
+    // Don't overwrite mountains
+    const tile = tiles.get(nk);
+    if (tile.terrain.id === 'mountain') {
+      // Try main direction instead
+      const mq = q + mainDir.q;
+      const mr = r + mainDir.r;
+      if (!tiles.has(hexKey(mq, mr))) break;
+      q = mq; r = mr;
+    } else {
+      q = nq; r = nr;
+    }
+    riverKeys.add(hexKey(q, r));
+  }
+}
+
+function placeBridges(tiles, riverTiles, rng) {
+  if (riverTiles.length < 2) return;
+
+  const shuffled = [...riverTiles].sort(() => rng() - 0.5);
+  const bridges = [];
+
+  for (const tile of shuffled) {
+    if (bridges.length >= 2) break;
+
+    // Bridge must have walkable neighbors on at least 2 sides
+    const neighbors = getNeighbors(tile.q, tile.r);
+    const walkableNeighbors = neighbors.filter(n => {
+      const t = tiles.get(hexKey(n.q, n.r));
+      return t && t.terrain.walkable;
+    });
+    if (walkableNeighbors.length < 2) continue;
+
+    // Check distance from other bridges
+    if (bridges.length === 1 && hexDistance(tile.q, tile.r, bridges[0].q, bridges[0].r) < 4) continue;
+
+    tile.terrain = Terrain.BRIDGE;
+    tile.height = 2;
+    bridges.push(tile);
   }
 }
 

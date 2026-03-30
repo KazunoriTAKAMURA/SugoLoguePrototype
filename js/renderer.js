@@ -76,9 +76,14 @@ export class Renderer {
       );
     }
 
-    // Castle emoji only
+    // Castle emoji
     for (const tile of sortedTiles) {
       if (tile.terrain.id === 'castle') this.drawEmoji(tile, '🏰', 22);
+    }
+
+    // Bridge emoji
+    for (const tile of sortedTiles) {
+      if (tile.terrain.id === 'bridge') this.drawEmoji(tile, '🌉', 20);
     }
 
     // Spring emoji

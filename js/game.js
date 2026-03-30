@@ -177,6 +177,12 @@ export class Game {
   // --- Terrain-based random encounter ---
   resolveRandomEncounter(tile) {
     const terrain = tile.terrain.id;
+
+    // Bridge: no events
+    if (terrain === 'bridge') {
+      return { text: '橋を渡った。', choices: [], autoResolve: true };
+    }
+
     let battlePct, treasurePct, trapPct;
 
     if (terrain === 'forest') {
