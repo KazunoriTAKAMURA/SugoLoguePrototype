@@ -11,7 +11,7 @@ export const Terrain = {
   MOUNTAIN: { id: 'mountain', name: '山',   color: '#8a8a9a', side: '#6a6a7a', walkable: false },
   CASTLE:   { id: 'castle',   name: '城',   color: '#c8b8a0', side: '#9a8a70', walkable: true },
   RIVER:    { id: 'river',    name: '川',   color: '#3a85d6', side: '#2a65a6', walkable: false },
-  BRIDGE:   { id: 'bridge',   name: '橋',   color: '#8B7355', side: '#6a5a40', walkable: true },
+  BRIDGE:   { id: 'bridge',   name: '橋',   color: '#3a85d6', side: '#2a65a6', walkable: true },
 };
 
 export const EventType = {
