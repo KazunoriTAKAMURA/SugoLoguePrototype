@@ -13,7 +13,6 @@
       <h1 id="title-logo">SugoLogue</h1>
       <p id="title-sub">すごろく × ローグライト</p>
       <div id="title-deco">⬡ ⬡ ⬡ ⬡ ⬡</div>
-
       <div id="title-dice-area" class="hidden">
         <p id="title-dice-label">初期ゴールドを決めよう！</p>
         <div id="title-dice-container">
@@ -22,15 +21,12 @@
         </div>
         <p id="title-dice-result" class="hidden"></p>
       </div>
-
       <button id="btn-title-roll" class="hidden">サイコロを振る</button>
       <button id="btn-start">ゲームスタート</button>
-
       <div id="ranking-section">
         <h2 id="ranking-title" class="hidden">クリアランキング</h2>
         <div id="ranking-list"></div>
       </div>
-
       <p id="title-hint">全10フロアを踏破し、ボスを倒せ</p>
     </div>
   </div>
@@ -45,6 +41,7 @@
 
   <!-- Game Screen -->
   <div id="app" class="hidden">
+    <!-- Full-screen map (desktop & mobile) -->
     <div id="game-area">
       <canvas id="gameCanvas"></canvas>
       <div id="move-info" class="hidden">
@@ -55,40 +52,66 @@
         <div id="floor-name-number"></div>
         <div id="floor-name-text"></div>
       </div>
-    </div>
-    <div id="ui-panel">
-      <h1>SugoLogue</h1>
 
-      <div id="stats-equip-row">
-        <div id="stats-panel" class="panel">
-          <h2>ステータス</h2>
-          <div class="stat-row"><span>HP</span><span id="stat-hp">20 / 20</span></div>
-          <div class="stat-row"><span>ATK</span><span id="stat-atk">3</span></div>
-          <div class="stat-row"><span>DEF</span><span id="stat-def">1</span></div>
-          <div class="stat-row"><span>AGI</span><span id="stat-agi">2</span></div>
-          <div class="stat-row"><span>ゴールド</span><span id="stat-gold">0</span></div>
-          <div class="stat-row"><span>レベル</span><span id="stat-level">1</span></div>
-          <div class="stat-row"><span>フロア</span><span id="stat-floor">1</span></div>
-          <div class="stat-row stat-turns"><span>残りダイス</span><span id="stat-turns">22 / 22</span></div>
-        </div>
+      <!-- Mobile: floating HUD top bar -->
+      <div id="mob-hud" class="mob-only">
+        <span id="mob-hp">HP 20/20</span>
+        <span id="mob-gold">💰0</span>
+        <span id="mob-floor">F1</span>
+        <span id="mob-turns">🎲13</span>
+      </div>
 
-        <div id="equip-panel" class="panel">
-          <h2>装備</h2>
-          <div class="equip-row"><span class="equip-label">武器</span><span id="equip-weapon" class="equip-value">なし</span></div>
-          <div class="equip-row"><span class="equip-label">防具</span><span id="equip-armor" class="equip-value">なし</span></div>
-          <div class="equip-row"><span class="equip-label">装飾</span><span id="equip-accessory" class="equip-value">なし</span></div>
+      <!-- Mobile: floating dice button -->
+      <button id="mob-roll" class="mob-only">🎲</button>
+
+      <!-- Mobile: floating menu button -->
+      <button id="mob-menu-btn" class="mob-only">☰</button>
+
+      <!-- Mobile: event modal -->
+      <div id="mob-event-modal" class="mob-only hidden">
+        <div id="mob-event-box">
+          <p id="mob-event-text"></p>
+          <div id="mob-event-choices"></div>
         </div>
       </div>
 
+      <!-- Mobile: menu modal (stats/equip/log) -->
+      <div id="mob-menu-modal" class="mob-only hidden">
+        <div id="mob-menu-box">
+          <div id="mob-stats"></div>
+          <div id="mob-equip"></div>
+          <div id="mob-log"></div>
+          <button id="mob-menu-close">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop: right panel (unchanged) -->
+    <div id="ui-panel">
+      <h1>SugoLogue</h1>
+      <div id="stats-panel" class="panel">
+        <h2>ステータス</h2>
+        <div class="stat-row"><span>HP</span><span id="stat-hp">20 / 20</span></div>
+        <div class="stat-row"><span>ATK</span><span id="stat-atk">3</span></div>
+        <div class="stat-row"><span>DEF</span><span id="stat-def">1</span></div>
+        <div class="stat-row"><span>AGI</span><span id="stat-agi">2</span></div>
+        <div class="stat-row"><span>ゴールド</span><span id="stat-gold">0</span></div>
+        <div class="stat-row"><span>レベル</span><span id="stat-level">1</span></div>
+        <div class="stat-row"><span>フロア</span><span id="stat-floor">1</span></div>
+        <div class="stat-row stat-turns"><span>残りダイス</span><span id="stat-turns">22 / 22</span></div>
+      </div>
+      <div id="equip-panel" class="panel">
+        <h2>装備</h2>
+        <div class="equip-row"><span class="equip-label">武器</span><span id="equip-weapon" class="equip-value">なし</span></div>
+        <div class="equip-row"><span class="equip-label">防具</span><span id="equip-armor" class="equip-value">なし</span></div>
+        <div class="equip-row"><span class="equip-label">装飾</span><span id="equip-accessory" class="equip-value">なし</span></div>
+      </div>
       <div id="dice-panel" class="panel">
         <h2>ダイス</h2>
-        <div id="dice-container">
-          <div class="dice" id="dice1">?</div>
-        </div>
+        <div id="dice-container"><div class="dice" id="dice1">?</div></div>
         <div id="dice-total"></div>
         <button id="btn-roll">サイコロを振る</button>
       </div>
-
       <div id="event-panel" class="panel">
         <h2>イベント</h2>
         <div id="event-content">
@@ -96,7 +119,6 @@
           <div id="event-choices"></div>
         </div>
       </div>
-
       <div id="log-panel" class="panel">
         <h2>ログ</h2>
         <div id="log-content"></div>

@@ -1,4 +1,5 @@
 // Main entry point: title dice, game loop, UI, click-to-move, endroll, ranking
+// Mobile: floating HUD + FAB dice + event/menu modals
 
 import { generateMap } from './map.js';
 import { Game } from './game.js';
@@ -17,11 +18,14 @@ const AUTO_MOVE_INTERVAL = 150;
 
 const RANKING_KEY = 'sugologue_rankings';
 
-// Scroll game-area to center on player position
+function isMobile() {
+  return window.matchMedia('(max-width: 1024px), (pointer: coarse)').matches;
+}
+
 function scrollToPlayer() {
   if (!renderer || !game) return;
   const gameArea = document.getElementById('game-area');
-  if (!gameArea || gameArea.scrollWidth <= gameArea.clientWidth) return;
+  if (!gameArea) return;
   const pos = game.position;
   const tile = game.map.tiles.get(`${pos.q},${pos.r}`);
   if (!tile) return;
@@ -31,7 +35,7 @@ function scrollToPlayer() {
   gameArea.scrollTop = pixel.y - gameArea.clientHeight / 2;
 }
 
-// --- DOM ---
+// --- DOM (shared) ---
 const titleScreen = document.getElementById('title-screen');
 const app = document.getElementById('app');
 const canvas = document.getElementById('gameCanvas');
@@ -70,25 +74,40 @@ const btnEndrollSkip = document.getElementById('btn-endroll-skip');
 const rankingTitle = document.getElementById('ranking-title');
 const rankingList = document.getElementById('ranking-list');
 
+// --- DOM (mobile) ---
+const mobHud = document.getElementById('mob-hud');
+const mobHp = document.getElementById('mob-hp');
+const mobGold = document.getElementById('mob-gold');
+const mobFloor = document.getElementById('mob-floor');
+const mobTurns = document.getElementById('mob-turns');
+const mobRoll = document.getElementById('mob-roll');
+const mobMenuBtn = document.getElementById('mob-menu-btn');
+const mobEventModal = document.getElementById('mob-event-modal');
+const mobEventText = document.getElementById('mob-event-text');
+const mobEventChoices = document.getElementById('mob-event-choices');
+const mobMenuModal = document.getElementById('mob-menu-modal');
+const mobStats = document.getElementById('mob-stats');
+const mobEquip = document.getElementById('mob-equip');
+const mobLog = document.getElementById('mob-log');
+const mobMenuClose = document.getElementById('mob-menu-close');
+
 // ====== Map radius per floor ======
 function getMapRadius(floor) {
-  if (floor <= 3) return 5;  // 1辺6マス
-  if (floor <= 6) return 6;  // 1辺7マス
-  if (floor <= 9) return 7;  // 1辺8マス
-  return 9;                  // 1辺10マス
+  if (floor <= 3) return 5;
+  if (floor <= 6) return 6;
+  if (floor <= 9) return 7;
+  return 9;
 }
 
 // ====== Ranking ======
 function loadRankings() {
-  try {
-    return JSON.parse(localStorage.getItem(RANKING_KEY)) || [];
-  } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(RANKING_KEY)) || []; }
+  catch { return []; }
 }
 
 function saveRanking(record) {
   const rankings = loadRankings();
   rankings.push(record);
-  // Sort: 1) status (クリア first) 2) level desc 3) clearTime asc
   rankings.sort((a, b) => {
     const sa = a.status === 'クリア' ? 0 : 1;
     const sb = b.status === 'クリア' ? 0 : 1;
@@ -102,21 +121,15 @@ function saveRanking(record) {
 
 function renderRankings() {
   const rankings = loadRankings();
-  if (rankings.length === 0) {
-    rankingTitle.classList.add('hidden');
-    rankingList.innerHTML = '';
-    return;
-  }
+  if (rankings.length === 0) { rankingTitle.classList.add('hidden'); rankingList.innerHTML = ''; return; }
   rankingTitle.classList.remove('hidden');
   rankingList.innerHTML = rankings.map((r, i) => {
-    const statusLabel = r.status === 'クリア' ? '🏆クリア' : '💀リタイア';
-    const floorLabel = r.floor ? `F${r.floor}` : '';
+    const sl = r.status === 'クリア' ? '🏆クリア' : '💀リタイア';
+    const fl = r.floor ? `F${r.floor}` : '';
     return `<div class="rank-entry${r.status === 'クリア' ? ' rank-clear' : ' rank-retire'}">` +
-      `<span class="rank-num">#${i + 1}</span>` +
-      `<span class="rank-status">${statusLabel}</span>` +
-      `<span class="rank-detail">${floorLabel} Lv.${r.level} | ${r.clearTime} | ATK${r.atk} DEF${r.def} AGI${r.agi} | ${r.gold}G</span>` +
-      `<span class="rank-equip">${r.weapon} / ${r.armor} / ${r.accessory}</span>` +
-      `</div>`;
+      `<span class="rank-num">#${i+1}</span><span class="rank-status">${sl}</span>` +
+      `<span class="rank-detail">${fl} Lv.${r.level} | ${r.clearTime} | ATK${r.atk} DEF${r.def} AGI${r.agi} | ${r.gold}G</span>` +
+      `<span class="rank-equip">${r.weapon} / ${r.armor} / ${r.accessory}</span></div>`;
   }).join('');
 }
 
@@ -124,58 +137,17 @@ function renderRankings() {
 function showEndroll(record) {
   app.classList.add('hidden');
   endrollOverlay.classList.remove('hidden');
-
-  const lines = [
-    '', '', '',
-    '🏆 CONGRATULATIONS 🏆',
-    '',
-    '全10フロア制覇！',
-    '',
-    '— クリアデータ —',
-    '',
-    `クリア時刻: ${record.clearTime} (JST)`,
-    `レベル: ${record.level}`,
-    `HP: ${record.hp} / ${record.maxHp}`,
-    `ATK: ${record.atk}`,
-    `DEF: ${record.def}`,
-    `AGI: ${record.agi}`,
-    '',
-    `武器: ${record.weapon}`,
-    `防具: ${record.armor}`,
-    `装飾: ${record.accessory}`,
-    '',
-    `所持ゴールド: ${record.gold}G`,
-    '',
-    '',
-    '— STAFF —',
-    '',
-    'Game Design',
-    'Player',
-    '',
-    'Programming',
-    'Claude & Player',
-    '',
-    'Powered by',
-    'SugoLogue Engine',
-    '',
-    '',
-    'Thank you for playing!',
-    '',
-    '',
-    '',
-  ];
-
-  endrollContent.innerHTML = lines.map(l =>
-    `<div class="endroll-line">${l || '&nbsp;'}</div>`
-  ).join('');
-
-  // Start scroll animation
+  const lines = ['','','','🏆 CONGRATULATIONS 🏆','','全10フロア制覇！','','— クリアデータ —','',
+    `クリア時刻: ${record.clearTime} (JST)`, `レベル: ${record.level}`,
+    `HP: ${record.hp} / ${record.maxHp}`, `ATK: ${record.atk}`, `DEF: ${record.def}`, `AGI: ${record.agi}`, '',
+    `武器: ${record.weapon}`, `防具: ${record.armor}`, `装飾: ${record.accessory}`, '',
+    `所持ゴールド: ${record.gold}G`, '','','— STAFF —','','Game Design','Player','',
+    'Programming','Claude & Player','','Powered by','SugoLogue Engine','','','Thank you for playing!','','',''];
+  endrollContent.innerHTML = lines.map(l => `<div class="endroll-line">${l || '&nbsp;'}</div>`).join('');
   const scroll = endrollOverlay.querySelector('#endroll-scroll');
   scroll.style.animation = 'none';
-  void scroll.offsetHeight; // reflow
+  void scroll.offsetHeight;
   scroll.style.animation = 'endrollScroll 15s linear forwards';
-
-  // Show skip button after 3s
   btnEndrollSkip.classList.add('hidden');
   setTimeout(() => btnEndrollSkip.classList.remove('hidden'), 3000);
 }
@@ -193,29 +165,21 @@ let titleDiceValues = [0, 0];
 let titleRollTimer = 0;
 
 function resetTitle() {
-  titleState = 'init';
-  startingGold = 0;
+  titleState = 'init'; startingGold = 0;
   titleDiceArea.classList.remove('hidden');
   btnTitleRoll.classList.remove('hidden');
   btnStart.classList.add('hidden');
   titleDiceResult.classList.add('hidden');
-  titleDice1.textContent = '?';
-  titleDice2.textContent = '?';
-  titleDice1.classList.remove('rolling');
-  titleDice2.classList.remove('rolling');
+  titleDice1.textContent = '?'; titleDice2.textContent = '?';
+  titleDice1.classList.remove('rolling'); titleDice2.classList.remove('rolling');
   renderRankings();
 }
 
 btnTitleRoll.addEventListener('click', () => {
   if (titleState !== 'init') return;
-  titleState = 'rolling';
-  titleRollTimer = 0;
-  titleDiceValues = [
-    Math.floor(Math.random() * 6) + 1,
-    Math.floor(Math.random() * 6) + 1,
-  ];
-  titleDice1.classList.add('rolling');
-  titleDice2.classList.add('rolling');
+  titleState = 'rolling'; titleRollTimer = 0;
+  titleDiceValues = [Math.floor(Math.random()*6)+1, Math.floor(Math.random()*6)+1];
+  titleDice1.classList.add('rolling'); titleDice2.classList.add('rolling');
   btnTitleRoll.classList.add('hidden');
 });
 
@@ -230,14 +194,12 @@ function updateTitleDice(dt) {
   if (titleState !== 'rolling') return;
   titleRollTimer += dt;
   if (titleRollTimer < 600) {
-    titleDice1.textContent = Math.floor(Math.random() * 6) + 1;
-    titleDice2.textContent = Math.floor(Math.random() * 6) + 1;
+    titleDice1.textContent = Math.floor(Math.random()*6)+1;
+    titleDice2.textContent = Math.floor(Math.random()*6)+1;
   } else {
     titleState = 'rolled';
-    titleDice1.textContent = titleDiceValues[0];
-    titleDice2.textContent = titleDiceValues[1];
-    titleDice1.classList.remove('rolling');
-    titleDice2.classList.remove('rolling');
+    titleDice1.textContent = titleDiceValues[0]; titleDice2.textContent = titleDiceValues[1];
+    titleDice1.classList.remove('rolling'); titleDice2.classList.remove('rolling');
     const total = titleDiceValues[0] + titleDiceValues[1];
     startingGold = total * 10;
     titleDiceResult.textContent = `${titleDiceValues[0]} + ${titleDiceValues[1]} = ${total} → 初期ゴールド ${startingGold}G！`;
@@ -246,7 +208,7 @@ function updateTitleDice(dt) {
   }
 }
 
-// ====== Floor Name Overlay ======
+// ====== Floor Name ======
 function showFloorName(floor, floorName) {
   floorNameNumber.textContent = `Floor ${floor}`;
   floorNameText.textContent = floorName;
@@ -255,10 +217,7 @@ function showFloorName(floor, floorName) {
   setTimeout(() => {
     floorNameOverlay.classList.remove('show');
     floorNameOverlay.classList.add('fade-out');
-    setTimeout(() => {
-      floorNameOverlay.classList.add('hidden');
-      floorNameOverlay.classList.remove('fade-out');
-    }, 1000);
+    setTimeout(() => { floorNameOverlay.classList.add('hidden'); floorNameOverlay.classList.remove('fade-out'); }, 1000);
   }, 2500);
 }
 
@@ -266,38 +225,27 @@ function showFloorName(floor, floorName) {
 function startGame(floor, keepStats = null, initialGold = 0) {
   const radius = getMapRadius(floor);
   map = generateMap(radius, Date.now());
-
   renderer = new Renderer(canvas);
   renderer.resize(radius);
-
   game = new Game(map);
   game.floor = floor;
   game.initTurns();
 
   if (keepStats) {
-    game.hp = keepStats.hp;
-    game.maxHpBase = keepStats.maxHpBase;
-    game.gold = keepStats.gold;
-    game.level = keepStats.level;
-    game.exp = keepStats.exp;
-    game.atkBase = keepStats.atkBase;
-    game.defBase = keepStats.defBase;
-    game.agiBase = keepStats.agiBase;
-    game.equipped = keepStats.equipped;
-    game.logs = keepStats.logs;
+    game.hp = keepStats.hp; game.maxHpBase = keepStats.maxHpBase;
+    game.gold = keepStats.gold; game.level = keepStats.level; game.exp = keepStats.exp;
+    game.atkBase = keepStats.atkBase; game.defBase = keepStats.defBase; game.agiBase = keepStats.agiBase;
+    game.equipped = keepStats.equipped; game.logs = keepStats.logs;
     game.hp = Math.min(game.hp, game.maxHp);
-  } else {
-    game.gold = initialGold;
-  }
+  } else { game.gold = initialGold; }
 
   autoMovePath = [];
   game.addLog(`--- フロア${floor}「${map.floorName}」開始 (残り${game.turnsLeft}ターン) ---`);
-  eventText.textContent = 'サイコロを振って進もう！';
-  eventChoices.innerHTML = '';
+  if (!isMobile()) { eventText.textContent = 'サイコロを振って進もう！'; eventChoices.innerHTML = ''; }
+  hideMobEvent();
   updateUI();
   showFloorName(floor, map.floorName);
   setTimeout(scrollToPlayer, 100);
-
   if (!lastTime) requestAnimationFrame(gameLoop);
 }
 
@@ -305,26 +253,29 @@ function startGame(floor, keepStats = null, initialGold = 0) {
 function gameLoop(time) {
   const dt = lastTime ? time - lastTime : 16;
   lastTime = time;
-
   updateTitleDice(dt);
 
+  // Dice animation
   if (diceAnimating && game) {
     diceAnimTimer += dt;
     if (diceAnimTimer < 500) {
-      dice1.textContent = Math.floor(Math.random() * 6) + 1;
+      const v = Math.floor(Math.random()*6)+1;
+      dice1.textContent = v;
+      if (isMobile()) mobRoll.textContent = v;
     } else {
       diceAnimating = false;
       dice1.textContent = game.die;
       dice1.classList.remove('rolling');
+      if (isMobile()) { mobRoll.textContent = '🎲'; mobRoll.disabled = true; }
       game.confirmRoll();
       diceTotal.textContent = `${game.die} マス`;
       game.addLog(`🎲 ${game.die} (残り${game.turnsLeft}ターン)`);
-      eventText.textContent = 'マップをクリックして移動！';
-      eventChoices.innerHTML = '';
+      if (!isMobile()) { eventText.textContent = 'マップをクリックして移動！'; eventChoices.innerHTML = ''; }
       updateUI();
     }
   }
 
+  // Auto-move
   if (autoMovePath.length > 0 && game && game.state === 'moving') {
     autoMoveTimer += dt;
     if (autoMoveTimer >= AUTO_MOVE_INTERVAL) {
@@ -335,17 +286,18 @@ function gameLoop(time) {
         autoMovePath = [];
         if (game.movesLeft <= 0) game.endMovement();
       }
-      updateUI();
-      scrollToPlayer();
+      updateUI(); scrollToPlayer();
     }
   }
 
+  // Auto-resolve events
   if (game && game.state === 'event' && game.pendingEvent && game.pendingEvent.autoResolve) {
     showEvent(game.pendingEvent);
     game.finishEvent();
     updateUI();
   }
 
+  // Turn-out gameover
   if (game && game.state === 'ready' && game.turnsLeft <= 0) {
     game.state = 'gameover';
     game.addLog('ターン切れで力尽きた...', 'event-battle');
@@ -358,9 +310,11 @@ function gameLoop(time) {
   requestAnimationFrame(gameLoop);
 }
 
-// ====== UI ======
+// ====== UI Update ======
 function updateUI() {
   if (!game) return;
+
+  // Desktop panel
   statHp.textContent = `${game.hp} / ${game.maxHp}`;
   statAtk.textContent = game.atk;
   statDef.textContent = game.def;
@@ -369,15 +323,12 @@ function updateUI() {
   statLevel.textContent = `${game.level} (EXP: ${game.exp}/${game.level * 15})`;
   statFloor.textContent = `${game.floor} / ${game.maxFloor}`;
   statTurns.textContent = `${game.turnsLeft} / ${game.maxTurns}`;
-
   if (game.turnsLeft <= 3) statTurns.style.color = '#e74c3c';
   else if (game.turnsLeft <= 6) statTurns.style.color = '#f39c12';
   else statTurns.style.color = '';
-
   updateEquipSlot(equipWeapon, game.equipped[EquipSlot.WEAPON]);
   updateEquipSlot(equipArmor, game.equipped[EquipSlot.ARMOR]);
   updateEquipSlot(equipAccessory, game.equipped[EquipSlot.ACCESSORY]);
-
   btnRoll.disabled = game.state !== 'ready' || game.turnsLeft <= 0;
 
   if (game.state === 'moving') {
@@ -389,13 +340,25 @@ function updateUI() {
     moveInfo.classList.add('hidden');
   }
 
-  if (game.state === 'event' && game.pendingEvent && !game.pendingEvent.autoResolve) showEvent(game.pendingEvent);
-  if (game.state === 'clear' && game.pendingEvent) showEvent(game.pendingEvent);
-  if (game.state === 'gameover' && game.pendingEvent) showEvent(game.pendingEvent);
+  // Desktop events
+  if (!isMobile()) {
+    if (game.state === 'event' && game.pendingEvent && !game.pendingEvent.autoResolve) showEvent(game.pendingEvent);
+    if (game.state === 'clear' && game.pendingEvent) showEvent(game.pendingEvent);
+    if (game.state === 'gameover' && game.pendingEvent) showEvent(game.pendingEvent);
+  }
 
-  logContent.innerHTML = game.logs
-    .map(l => `<div class="log-entry ${l.className}">${l.text}</div>`)
-    .join('');
+  logContent.innerHTML = game.logs.map(l => `<div class="log-entry ${l.className}">${l.text}</div>`).join('');
+
+  // Mobile HUD
+  if (isMobile()) {
+    mobHp.textContent = `HP ${game.hp}/${game.maxHp}`;
+    mobHp.style.color = game.hp / game.maxHp > 0.5 ? '#2ecc71' : game.hp / game.maxHp > 0.25 ? '#f39c12' : '#e74c3c';
+    mobGold.textContent = `💰${game.gold}`;
+    mobFloor.textContent = `F${game.floor}`;
+    mobTurns.textContent = `🎲${game.turnsLeft}`;
+    mobTurns.style.color = game.turnsLeft <= 3 ? '#e74c3c' : game.turnsLeft <= 6 ? '#f39c12' : '#e9b44c';
+    mobRoll.disabled = game.state !== 'ready' || game.turnsLeft <= 0;
+  }
 }
 
 function updateEquipSlot(el, item) {
@@ -403,7 +366,9 @@ function updateEquipSlot(el, item) {
   else { el.textContent = 'なし'; el.classList.remove('has-item'); }
 }
 
+// ====== Show Event (desktop + mobile) ======
 function showEvent(ev) {
+  // Desktop
   eventText.textContent = ev.text;
   eventChoices.innerHTML = '';
   for (const choice of (ev.choices || [])) {
@@ -412,9 +377,32 @@ function showEvent(ev) {
     btn.addEventListener('click', () => handleChoice(choice));
     eventChoices.appendChild(btn);
   }
+
+  // Mobile: show modal for non-autoResolve events
+  if (isMobile() && ev.choices && ev.choices.length > 0) {
+    showMobEvent(ev);
+  }
+}
+
+function showMobEvent(ev) {
+  mobEventText.textContent = ev.text;
+  mobEventChoices.innerHTML = '';
+  for (const choice of (ev.choices || [])) {
+    const btn = document.createElement('button');
+    btn.textContent = choice.text;
+    btn.addEventListener('click', () => { hideMobEvent(); handleChoice(choice); });
+    mobEventChoices.appendChild(btn);
+  }
+  mobEventModal.classList.remove('hidden');
+}
+
+function hideMobEvent() {
+  mobEventModal.classList.add('hidden');
 }
 
 function handleChoice(choice) {
+  hideMobEvent();
+
   if (choice.action === 'nextFloor') {
     const stats = {
       hp: game.hp, maxHpBase: game.maxHpBase, gold: game.gold,
@@ -427,18 +415,12 @@ function handleChoice(choice) {
   }
 
   if (choice.action === 'endroll') {
-    if (game.clearRecord) {
-      saveRanking(game.clearRecord);
-      showEndroll(game.clearRecord);
-    }
+    if (game.clearRecord) { saveRanking(game.clearRecord); showEndroll(game.clearRecord); }
     return;
   }
 
   if (choice.action === 'retry') {
-    // Save retire record
-    if (game) {
-      saveRanking(game.buildRecord('リタイア'));
-    }
+    if (game) saveRanking(game.buildRecord('リタイア'));
     app.classList.add('hidden');
     titleScreen.classList.remove('hidden');
     resetTitle();
@@ -446,7 +428,6 @@ function handleChoice(choice) {
   }
 
   game.executeChoice(choice.action, choice.data);
-
   if (game.pendingEvent) {
     showEvent(game.pendingEvent);
     if (game.pendingEvent.autoResolve && game.state !== 'gameover') game.finishEvent();
@@ -454,22 +435,53 @@ function handleChoice(choice) {
   updateUI();
 }
 
-// ====== Input ======
-btnRoll.addEventListener('click', () => {
+// ====== Mobile: menu modal ======
+if (mobMenuBtn) {
+  mobMenuBtn.addEventListener('click', () => {
+    if (!game) return;
+    const w = game.equipped[EquipSlot.WEAPON]?.name || 'なし';
+    const a = game.equipped[EquipSlot.ARMOR]?.name || 'なし';
+    const ac = game.equipped[EquipSlot.ACCESSORY]?.name || 'なし';
+
+    mobStats.innerHTML = `<div class="section-title">ステータス</div>
+      <table><tr><td>HP</td><td>${game.hp} / ${game.maxHp}</td></tr>
+      <tr><td>ATK</td><td>${game.atk}</td></tr><tr><td>DEF</td><td>${game.def}</td></tr>
+      <tr><td>AGI</td><td>${game.agi}</td></tr><tr><td>ゴールド</td><td>${game.gold}</td></tr>
+      <tr><td>レベル</td><td>${game.level}</td></tr><tr><td>フロア</td><td>${game.floor}/${game.maxFloor}</td></tr>
+      <tr><td>残りダイス</td><td>${game.turnsLeft}/${game.maxTurns}</td></tr></table>`;
+
+    mobEquip.innerHTML = `<div class="section-title">装備</div>
+      <table><tr><td>武器</td><td>${w}</td></tr><tr><td>防具</td><td>${a}</td></tr><tr><td>装飾</td><td>${ac}</td></tr></table>`;
+
+    mobLog.innerHTML = `<div class="section-title">ログ</div>
+      <div class="log-entries">${game.logs.slice(0, 20).map(l => `<div class="log-entry ${l.className}">${l.text}</div>`).join('')}</div>`;
+
+    mobMenuModal.classList.remove('hidden');
+  });
+}
+
+if (mobMenuClose) {
+  mobMenuClose.addEventListener('click', () => mobMenuModal.classList.add('hidden'));
+}
+
+// ====== Input: Dice Roll ======
+function triggerDiceRoll() {
   if (!game || game.state !== 'ready') return;
   const result = game.rollDice();
   if (result) {
-    diceAnimating = true;
-    diceAnimTimer = 0;
+    diceAnimating = true; diceAnimTimer = 0;
     dice1.classList.add('rolling');
     diceTotal.textContent = '';
-    eventText.textContent = 'サイコロを振っています...';
-    eventChoices.innerHTML = '';
+    if (!isMobile()) { eventText.textContent = 'サイコロを振っています...'; eventChoices.innerHTML = ''; }
     btnRoll.disabled = true;
+    if (isMobile()) mobRoll.disabled = true;
   } else if (game.state === 'gameover') {
     updateUI();
   }
-});
+}
+
+btnRoll.addEventListener('click', triggerDiceRoll);
+if (mobRoll) mobRoll.addEventListener('click', triggerDiceRoll);
 
 btnStop.addEventListener('click', () => {
   if (game && game.state === 'moving' && game.canStopHere()) {
@@ -479,11 +491,11 @@ btnStop.addEventListener('click', () => {
   }
 });
 
+// ====== Input: Canvas tap/click ======
 function handleCanvasTap(clientX, clientY) {
   if (!game || game.state !== 'moving') return;
   if (autoMovePath.length > 0) return;
   const rect = canvas.getBoundingClientRect();
-  // Scale from CSS display size to actual canvas pixel size
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
   const x = (clientX - rect.left) * scaleX;
@@ -495,27 +507,21 @@ function handleCanvasTap(clientX, clientY) {
   const adjacent = movable.find(m => m.q === tile.q && m.r === tile.r);
   if (adjacent) {
     game.moveToHex(tile.q, tile.r);
-    updateUI();
-    scrollToPlayer();
+    updateUI(); scrollToPlayer();
     return;
   }
 
   const path = game.findAutoPath(tile.q, tile.r);
   if (path && path.length > 0) {
-    autoMovePath = path;
-    autoMoveTimer = 0;
+    autoMovePath = path; autoMoveTimer = 0;
     const firstStep = autoMovePath.shift();
     game.executeAutoStep(firstStep.q, firstStep.r);
     if (autoMovePath.length === 0 && game.movesLeft <= 0) game.endMovement();
-    updateUI();
-    scrollToPlayer();
+    updateUI(); scrollToPlayer();
   }
 }
 
-canvas.addEventListener('click', (e) => {
-  handleCanvasTap(e.clientX, e.clientY);
-});
-
+canvas.addEventListener('click', (e) => handleCanvasTap(e.clientX, e.clientY));
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
   if (e.changedTouches.length > 0) {
@@ -532,13 +538,8 @@ canvas.addEventListener('mousemove', (e) => {
   const x = (e.clientX - rect.left) * scaleX;
   const y = (e.clientY - rect.top) * scaleY;
   const tile = renderer.screenToHex(x, y, map.tiles);
-  if (tile) {
-    renderer.hoveredHex = { q: tile.q, r: tile.r };
-    canvas.title = `${tile.terrain.name} (高さ: ${tile.height})`;
-  } else {
-    renderer.hoveredHex = null;
-    canvas.title = '';
-  }
+  if (tile) { renderer.hoveredHex = { q: tile.q, r: tile.r }; canvas.title = `${tile.terrain.name} (高さ: ${tile.height})`; }
+  else { renderer.hoveredHex = null; canvas.title = ''; }
 });
 
 // ====== Init ======
