@@ -373,25 +373,48 @@ function growRiverArm(tiles, start, mainDir, dirs, radius, rng, riverKeys) {
 function placeBridges(tiles, riverTiles, rng) {
   if (riverTiles.length < 2) return;
 
+  // A valid bridge must have walkable (non-river, non-mountain) neighbors
+  // on at least 2 DIFFERENT sides of the river (i.e. you can cross through it)
+  function isValidBridgeSpot(tile) {
+    const neighbors = getNeighbors(tile.q, tile.r);
+    const walkableSides = [];
+    for (const n of neighbors) {
+      const t = tiles.get(hexKey(n.q, n.r));
+      if (t && t.terrain.walkable && t.terrain.id !== 'river' && t.terrain.id !== 'bridge') {
+        walkableSides.push(n);
+      }
+    }
+    // Need at least 2 walkable neighbors that are NOT adjacent to each other
+    // (meaning they're on different sides of the river)
+    if (walkableSides.length < 2) return false;
+
+    // Check that at least one pair of walkable neighbors are across from each other
+    // (not next to each other along the same bank)
+    for (let i = 0; i < walkableSides.length; i++) {
+      for (let j = i + 1; j < walkableSides.length; j++) {
+        const dist = hexDistance(walkableSides[i].q, walkableSides[i].r,
+                                 walkableSides[j].q, walkableSides[j].r);
+        if (dist >= 2) return true; // on opposite sides
+      }
+    }
+    return false;
+  }
+
   const shuffled = [...riverTiles].sort(() => rng() - 0.5);
   const bridges = [];
+  const maxBridges = 3;
 
   for (const tile of shuffled) {
-    if (bridges.length >= 2) break;
+    if (bridges.length >= maxBridges) break;
 
-    // Bridge must have walkable neighbors on at least 2 sides
-    const neighbors = getNeighbors(tile.q, tile.r);
-    const walkableNeighbors = neighbors.filter(n => {
-      const t = tiles.get(hexKey(n.q, n.r));
-      return t && t.terrain.walkable;
-    });
-    if (walkableNeighbors.length < 2) continue;
+    if (!isValidBridgeSpot(tile)) continue;
 
-    // Check distance from other bridges
-    if (bridges.length === 1 && hexDistance(tile.q, tile.r, bridges[0].q, bridges[0].r) < 4) continue;
+    // Check min distance from existing bridges
+    const tooClose = bridges.some(b => hexDistance(tile.q, tile.r, b.q, b.r) < 4);
+    if (tooClose) continue;
 
     tile.terrain = Terrain.BRIDGE;
-    tile.height = 2;
+    tile.height = 1;
     bridges.push(tile);
   }
 }
