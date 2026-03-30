@@ -233,7 +233,7 @@ function placeCastles(tiles, allCoords, rng, reachable) {
     if (placed >= 1) break;
     const key = hexKey(c.q, c.r);
     const tile = tiles.get(key);
-    if (tile && tile.terrain.walkable && tile.event.id === 'empty' && reachable.has(key)) {
+    if (tile && tile.terrain.walkable && tile.terrain.id !== 'bridge' && tile.event.id === 'empty' && reachable.has(key)) {
       tile.terrain = Terrain.CASTLE; tile.height = Math.max(3, tile.height);
       tile.event = EventType.SHOP; placed++;
     }
@@ -244,7 +244,7 @@ function placeSprings(tiles, allCoords, rng, reachable) {
   const candidates = allCoords.filter(c => {
     const key = hexKey(c.q, c.r);
     const tile = tiles.get(key);
-    return tile && tile.terrain.walkable && tile.event.id === 'empty' && reachable.has(key);
+    return tile && tile.terrain.walkable && tile.terrain.id !== 'bridge' && tile.event.id === 'empty' && reachable.has(key);
   });
   const shuffled = [...candidates].sort(() => rng() - 0.5);
 
@@ -267,7 +267,7 @@ function placeWarps(tiles, allCoords, rng, reachable) {
   const candidates = allCoords.filter(c => {
     const key = hexKey(c.q, c.r);
     const tile = tiles.get(key);
-    return tile && tile.terrain.walkable && tile.event.id === 'empty' && reachable.has(key);
+    return tile && tile.terrain.walkable && tile.terrain.id !== 'bridge' && tile.event.id === 'empty' && reachable.has(key);
   });
   const shuffled = [...candidates].sort(() => rng() - 0.5);
 
